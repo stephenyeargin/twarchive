@@ -1,0 +1,5 @@
+.bundle/
+.ruby-version
+*.csv
+lib/bundler/man/
+vendor/bundle

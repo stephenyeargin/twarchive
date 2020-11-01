@@ -1,0 +1,188 @@
+#!/usr/bin/env ruby
+
+require 'twitter'
+require 'dotenv'
+require 'csv'
+
+Dotenv.load
+
+client = Twitter::REST::Client.new do |config|
+  config.consumer_key        = ENV['TWITTER_CONSUMER_KEY']
+  config.consumer_secret     = ENV['TWITTER_CONSUMER_SECRET']
+  config.access_token        = ENV['TWITTER_ACCESS_TOKEN']
+  config.access_token_secret = ENV['TWITTER_ACCESS_TOKEN_SECRET']
+end
+
+username = ARGV[0]
+unless username
+  puts 'Usage: ./twarchive <username>'
+  exit 0
+end
+
+def collect_with_max_id(collection=[], max_id=nil, &block)
+  response = yield(max_id)
+  collection += response
+  response.empty? ? collection.flatten : collect_with_max_id(collection, response.last.id - 1, &block)
+end
+
+def client.get_all_tweets(user)
+  collect_with_max_id do |max_id|
+    options = {count: 200, include_rts: true}
+    options[:max_id] = max_id unless max_id.nil?
+    user_timeline(user, options)
+  end
+end
+
+timeline = client.get_all_tweets(username)
+basepath = File.dirname(File.dirname(__FILE__))
+CSV.open("#{basepath}/output/#{username}.csv", 'wb') do |csv|
+  counter = 0
+  csv << [
+    'user',
+    'source?',
+    'text?',
+    'text',
+    'filter_level',
+    'in_reply_to_screen_name',
+    'favorite_count',
+    'in_reply_to_status_id',
+    'in_reply_to_user_id',
+    'quote_count',
+    'reply_count',
+    'retweet_count',
+    'in_reply_to_tweet_id',
+    'reply?',
+    'in_reply_to_user_id?',
+    'geo',
+    'place',
+    'retweeted_status',
+    'quoted_status',
+    'current_user_retweet',
+    'retweeted_tweet',
+    'retweet?',
+    'retweeted_status?',
+    'retweeted_tweet?',
+    'quoted_tweet',
+    'quote?',
+    'quoted_status?',
+    'quoted_tweet?',
+    'filter_level?',
+    'lang?',
+    'favorite_count?',
+    'in_reply_to_status_id?',
+    'quote_count?',
+    'reply_count?',
+    'retweet_count?',
+    'in_reply_to_screen_name?',
+    'metadata?',
+    'place?',
+    'geo?',
+    'current_user_retweet?',
+    'favorited?',
+    'possibly_sensitive?',
+    'retweeted?',
+    'truncated?',
+    'url',
+    'user?',
+    'uri',
+    'lang',
+    'source',
+    'full_text',
+    'metadata',
+    'entities?',
+    'hashtags',
+    'hashtags?',
+    'media',
+    'uris',
+    'media?',
+    'symbols?',
+    'urls',
+    'uris?',
+    'urls?',
+    'user_mentions',
+    'user_mentions?',
+    'symbols',
+    'created_at',
+    'created?',
+    'id?',
+    'id'
+  ]
+  timeline.each do |t|
+    csv << [
+      t.user.screen_name,
+      t.source?,
+      t.text?,
+      t.text,
+      t.filter_level,
+      t.in_reply_to_screen_name,
+      t.favorite_count,
+      t.in_reply_to_status_id,
+      t.in_reply_to_user_id,
+      t.quote_count,
+      t.reply_count,
+      t.retweet_count,
+      t.in_reply_to_tweet_id,
+      t.reply?,
+      t.in_reply_to_user_id?,
+      t.geo,
+      t.place,
+      t.retweeted_status,
+      t.quoted_status,
+      t.current_user_retweet,
+      t.retweeted_tweet,
+      t.retweet?,
+      t.retweeted_status?,
+      t.retweeted_tweet?,
+      t.quoted_tweet,
+      t.quote?,
+      t.quoted_status?,
+      t.quoted_tweet?,
+      t.filter_level?,
+      t.lang?,
+      t.favorite_count?,
+      t.in_reply_to_status_id?,
+      t.quote_count?,
+      t.reply_count?,
+      t.retweet_count?,
+      t.in_reply_to_screen_name?,
+      t.metadata?,
+      t.place?,
+      t.geo?,
+      t.current_user_retweet?,
+      t.favorited?,
+      t.possibly_sensitive?,
+      t.retweeted?,
+      t.truncated?,
+      t.url,
+      t.user?,
+      t.uri,
+      t.lang,
+      t.source,
+      t.full_text,
+      t.metadata,
+      t.entities?,
+      t.hashtags,
+      t.hashtags?,
+      t.media,
+      t.uris,
+      t.media?,
+      t.symbols?,
+      t.urls,
+      t.uris?,
+      t.urls?,
+      t.user_mentions,
+      t.user_mentions?,
+      t.symbols,
+      t.created_at,
+      t.created?,
+      t.id?,
+      t.id
+    ]
+    counter += 1
+  end
+  
+  puts "Saved #{counter} tweets to ./output/#{username}.csv"
+  
+end
+
+private
